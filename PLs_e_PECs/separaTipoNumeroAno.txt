@@ -1,0 +1,22 @@
+import xml.etree.ElementTree as ET
+plsPecs = ET.parse('todasPlsPecs.xml')
+raiz = plsPecs.getroot()
+arquivo = open("tipoNumeroAno.txt", "w")
+plsPecs = []
+for proposicao in raiz.findall('proposicao'):
+	tipoArray = proposicao.find('nomeProposicao').text
+	tipoArray = tipoArray.split()
+	tipo = tipoArray[0]
+	numeroAnoArray = tipoArray[1].split('/')
+	numero = numeroAnoArray[0]
+	ano = numeroAnoArray[1]
+	anoVotacao = proposicao.find('dataVotacao').text
+	anoVotacao = anoVotacao.split('/')
+	anoVotacao = anoVotacao[2]
+	resultado = tipo+" "+numero+" "+ano+" "+anoVotacao
+	if resultado not in plsPecs:
+		arquivo.write(resultado+"\n")
+		plsPecs.append(resultado)
+
+arquivo.close() //tem que executar
+

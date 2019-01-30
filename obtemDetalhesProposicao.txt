@@ -1,0 +1,87 @@
+import requests
+import xml.etree.ElementTree as ET
+
+def nomesSimProposicao(textoXml):
+	root = ET.fromstring(textoXml)
+	nomes = []
+	for votacao in root.find('Votacoes').findall('Votacao'):
+		for voto in votacao.find('votos').findall('Deputado'):
+			if voto.attrib['Voto'].strip() == 'Sim' :
+				nomes.append(voto.attrib['Nome'])
+	return nomes
+
+def idsSimProposicao(textoXml):
+	root = ET.fromstring(textoXml)
+	ids = []
+	for votacao in root.find('Votacoes').findall('Votacao'):
+		for voto in votacao.find('votos').findall('Deputado'):
+			if voto.attrib['Voto'].strip() == 'Sim' :
+				ids.append(voto.attrib['ideCadastro'])
+	return ids
+
+def partidoSimProposicao(textoXml):
+	root = ET.fromstring(textoXml)
+	partidos = []
+	for votacao in root.find('Votacoes').findall('Votacao'):
+		for voto in votacao.find('votos').findall('Deputado'):
+			if voto.attrib['Voto'].strip() == 'Sim' :
+				partidos.append(voto.attrib['Partido'])
+	return partidos
+
+
+def temasProposicao(textoXml):
+	root = ET.fromstring(textoXml)
+	temas = root.find('tema').text
+	temas = temas.split(', ')
+	return temas
+
+arquivoEscrita = open("arquivoFinal.txt", "w")
+
+for ano in range(2010, 2019):
+	nomesDeputados = [] #nomes dos deputados que votaram sim naquele ano sem repetições
+	#idsDeputados = [] #ids dos deputados que votaram sim naquele ano sem repetições
+	temasDeputados = {} #dicionário onde as chaves são os temas votados naquele ano e os valores são os deputados
+	arquivo = open("tipoNumeroAno.txt","r")
+	arquivoEscrita.write("\tANO: "+str(ano)+"\n\n")
+	for linha in arquivo:
+		linha = linha.split()
+		if int(linha[3]) == ano:
+			try:
+				requestProposicao = requests.get("http://www.camara.leg.br/SitCamaraWS/Proposicoes.asmx/ObterProposicao?tipo="+linha[0]+"&numero="+linha[1]+"&ano="+linha[2]);
+				requestVotacao = requests.get("http://www.camara.leg.br/SitCamaraWS/Proposicoes.asmx/ObterVotacaoProposicao?tipo="+linha[0]+"&numero="+linha[1]+"&ano="+linha[2]);
+				resultado = ""
+				temas = temasProposicao(requestProposicao.text)
+				nomes = nomesSimProposicao(requestVotacao.text)
+				#ids = idsSimProposicao(requestVotacao.text)
+
+				for tema in temas:
+					resultado = resultado + tema + " " 
+				for nome in nomes:
+					if nome not in nomesDeputados:
+						nomesDeputados.append(nome)
+					resultado = resultado + " " + nome
+
+				#for id in ids:
+					#if id not in idsDeputados:
+						#idsDeputados.append(id)
+					#resultado = resultado + " " + id
+
+				if tema not in temasDeputados:
+					temasDeputados[tema] = nomes
+					#temasDeputados[tema] = ids
+
+				arquivoEscrita.write(resultado+"\n\n")
+			except:
+				pass
+	arquivoEscrita.write("\tEstrutura de dados para o ano "+str(ano)+"\n\n")
+	for chave, valores in temasDeputados.items():
+		arquivoEscrita.write(chave+": ")
+		for valor in valores:
+			arquivoEscrita.write(valor+"; ")
+		arquivoEscrita.write("\n")
+	arquivoEscrita.write("\n\n")
+	arquivo.close()
+
+arquivoEscrita.close()
+
+
